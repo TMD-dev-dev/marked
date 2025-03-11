@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "784640881881",
+    "project_id": "marked-205cf",
+    "storage_bucket": "marked-205cf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:784640881881:android:046113819cff3eaa1afac8",
+        "android_client_info": {
+          "package_name": "com.theMortalDrifters.marked"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXxu-PwZPMKvlxmnwIgNxPy4eJ0-__KSo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

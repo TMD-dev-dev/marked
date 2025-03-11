@@ -1,0 +1,5 @@
+package com.theMortalDrifters.marked
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
