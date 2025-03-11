@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:marked/screens/faculty/unlock_attendance_screen.dart';
 
 class CourseInteractionScreen extends StatefulWidget {
@@ -26,8 +25,8 @@ class _CourseInteractionScreenState extends State<CourseInteractionScreen> {
   List<String> rollNumbers = [];
   Map<String, String> studentNames = {};
   List<String> sessionDates = [];
+  String facultyName = "Unknown"; // Default value if faculty is not found
   Map<String, Map<String, bool>> attendanceData = {};
-  Position? facultyLocation;
   Map<String, double> attendancePercentage = {};
   Map<String, String> rollToNameMap = {}; // Store rollNumber -> Name mapping
   bool showNames = false; // Toggle for roll numbers or names
@@ -52,6 +51,17 @@ class _CourseInteractionScreenState extends State<CourseInteractionScreen> {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
       List<String> fetchedClassList = List<String>.from(data["classList"]);
 
+      // Fetch faculty UID (assuming it's stored in 'facultyId')
+      String? facultyId = data["facultyId"];
+
+      if (facultyId != null) {
+        // Fetch faculty details from Firestore
+        DocumentSnapshot facultyDoc = await _firestore.collection('users').doc(facultyId).get();
+        if (facultyDoc.exists) {
+          facultyName = facultyDoc["name"] ?? "Unknown";
+        }
+      }
+
       List<String> studentRollNumbers = [];
       int studentCount = 0;
 
@@ -60,6 +70,7 @@ class _CourseInteractionScreenState extends State<CourseInteractionScreen> {
             .collection('users')
             .where('className', isEqualTo: className)
             .where('role', isEqualTo: 'Student')
+            .orderBy('rollNumber')
             .get();
 
         for (var studentDoc in studentsSnapshot.docs) {
@@ -67,7 +78,7 @@ class _CourseInteractionScreenState extends State<CourseInteractionScreen> {
           String studentName = studentDoc['name'];
 
           studentRollNumbers.add(rollNumber);
-          rollToNameMap[rollNumber] = studentName; // ✅ Store mapping of roll number to name
+          rollToNameMap[rollNumber] = studentName;
         }
 
         studentCount += studentsSnapshot.docs.length;
@@ -80,7 +91,6 @@ class _CourseInteractionScreenState extends State<CourseInteractionScreen> {
       });
     }
   }
-
 
   Future<void> _fetchAttendanceRecords() async {
     QuerySnapshot sessionsSnapshot = await _firestore
@@ -265,12 +275,26 @@ class _CourseInteractionScreenState extends State<CourseInteractionScreen> {
                         elevation: 4,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         child: ListTile(
-                          title: Text(widget.courseName,
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                          subtitle: Text("Classes: ${classList.join(", ")}",
-                              style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+                          title: Text(
+                            widget.courseName,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Faculty: $facultyName", // ✅ Display faculty name
+                                style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                "Classes: ${classList.join(", ")}",
+                                style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+
                       const SizedBox(height: 10),
                       // ✅ Attendance Data Table
                       SingleChildScrollView(
@@ -324,9 +348,11 @@ class _CourseInteractionScreenState extends State<CourseInteractionScreen> {
                                           : "${attendancePercentage[rollNumber]!.toStringAsFixed(1)}%",
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: (attendancePercentage[rollNumber] ?? 0) < 75
-                                            ? Colors.red  // 🔴 Less than 75% → Red
-                                            : Colors.green, // 🟢 75% and above → Green
+                                        color: (attendancePercentage[rollNumber] ?? 0) >= 85
+                                            ? Colors.green // 🟢 85% and above → Green
+                                            : (attendancePercentage[rollNumber] ?? 0) >= 75
+                                            ? Colors.yellow[700] // 🟡 75% - 84.99% → Yellow
+                                            : Colors.red, // 🔴 Below 75% → Red
                                       ),
                                     ),
                                   ),

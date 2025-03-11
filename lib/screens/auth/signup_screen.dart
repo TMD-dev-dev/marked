@@ -65,44 +65,79 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
   }
 
   void signUp() async {
+    // Check if all required fields are filled based on the selected year
+    if (nameController.text.trim().isEmpty ||
+        emailController.text.trim().isEmpty ||
+        passwordController.text.trim().isEmpty ||
+        confirmPasswordController.text.trim().isEmpty ||
+        selectedYear == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Please fill in all required fields!")),
+      );
+      return;
+    }
+
+    // If the user selects a year (1st, 2nd, 3rd, or 4th), roll number & class name must be provided
+    if (selectedYear != "null" &&
+        (rollNumberController.text.trim().isEmpty || selectedClass == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Please enter your roll number and class!")),
+      );
+      return;
+    }
+
+    // Ensure passwords match
     if (passwordController.text.trim() != confirmPasswordController.text.trim()) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("⚠️ Passwords do not match!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Passwords do not match!")),
+      );
       return;
     }
 
     setState(() => isLoading = true);
 
-    // ✅ Determine role based on year selection
+    // Assign role based on year selection
     String? assignedRole = selectedYear == "null" ? null : "Student";
 
+    // Call AuthService signUp()
     User? user = await _authService.signUp(
       name: nameController.text.trim(),
       email: emailController.text.trim(),
       password: passwordController.text.trim(),
       role: assignedRole,
-      year: assignedRole == "Student" ? selectedYear : null,
-      rollNumber: assignedRole == "Student" ? rollNumberController.text.trim() : null,
-      className: assignedRole == "Student" ? selectedClass : null,
+      year: selectedYear,
+      rollNumber: selectedYear == "null" ? null : rollNumberController.text.trim(),
+      className: selectedYear == "null" ? null : selectedClass,
     );
 
     setState(() => isLoading = false);
 
     if (user != null) {
       await FirebaseFirestore.instance.collection("users").doc(user.uid).set(
-        {"uid": user.uid},
+        {
+          "uid": user.uid,
+          "name": nameController.text.trim(),
+          "email": emailController.text.trim(),
+          "role": assignedRole,
+          "year": selectedYear,
+          "rollNumber": selectedYear == "null" ? null : rollNumberController.text.trim(),
+          "className": selectedYear == "null" ? null : selectedClass,
+        },
         SetOptions(merge: true),
       );
 
       if (assignedRole == "Student") {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const StudentDashboard()));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("✅ Account created! Waiting for admin approval."),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Account created! Waiting for admin approval.")),
+        );
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("❌ Signup failed. Try again.")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Signup failed. Try again.")),
+      );
     }
   }
 
