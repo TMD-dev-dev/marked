@@ -44,6 +44,17 @@ dependencies:
   google_fonts: ^6.2.1
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.14.3
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"  # Path to your icon (1024x1024 recommended)
+  adaptive_icon_background: "assets/icon/app_icon_background.png"     # Background color (for Android adaptive icons)
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png" # (Optional for adaptive icons)
+  android_application_name: "GeoLogix"  # Change app name here
+  ios_application_name: "GeoLogix"
+
   flutter_test:
     sdk: flutter
 
